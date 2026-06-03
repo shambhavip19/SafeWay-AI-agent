@@ -18,9 +18,10 @@ class Analysis(Base):
     latitude = Column(Float)
     longitude = Column(Float)
 
-    safety_score = Column(Float)
+    safety_score = Column(Float, default=0)
 
-    risk_level = Column(String)
+    risk_level = Column(String, default="Unknown")
+
+    event_time = Column(DateTime)
 
     created_at = Column(DateTime, default=datetime.utcnow)
-    

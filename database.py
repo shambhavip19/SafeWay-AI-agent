@@ -17,4 +17,21 @@ SessionLocal = sessionmaker(
 
 from models import Base
 Base.metadata.create_all(bind=engine)
-print("✅ Tables created successfully!")
+
+
+from sqlalchemy.orm import sessionmaker
+
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine
+)
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+print("Tables created successfully!")
