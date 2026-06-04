@@ -5,9 +5,16 @@ from database import get_db
 from models import Analysis
 from schemas import AnalysisCreate
 from services.safety_engine import calculate_safety_score 
-
+from services.ai_recommendation import generate_recommendation
+from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI()
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 def home():
@@ -22,6 +29,10 @@ def create_analysis(
     coords = get_coordinates(analysis.destination)
     safety = calculate_safety_score(
     analysis.event_time
+)
+    recommendation = generate_recommendation(
+    safety["score"],
+    safety["risk_level"]
 )
 
     new_analysis = Analysis(
@@ -42,5 +53,6 @@ def create_analysis(
     "id": new_analysis.id,
     "safety_score": new_analysis.safety_score,
     "risk_level": new_analysis.risk_level,
+    "recommendation": recommendation,
     "message": "Analysis created successfully"
-    }
+}
