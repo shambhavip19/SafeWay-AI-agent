@@ -7,6 +7,9 @@ from schemas import AnalysisCreate
 from services.safety_engine import calculate_safety_score 
 from services.ai_recommendation import generate_recommendation
 from fastapi.middleware.cors import CORSMiddleware
+from services.emergency_services import get_nearby_emergency_services
+
+
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -27,8 +30,15 @@ def create_analysis(
     db: Session = Depends(get_db)
 ):
     coords = get_coordinates(analysis.destination)
+
+    emergency = get_nearby_emergency_services(
+        coords["latitude"],
+        coords["longitude"]
+    )
     safety = calculate_safety_score(
-    analysis.event_time
+    analysis.event_time,
+    emergency["police_count"],
+    emergency["hospital_count"]
 )
     recommendation = generate_recommendation(
     safety["score"],
@@ -53,6 +63,8 @@ def create_analysis(
     "id": new_analysis.id,
     "safety_score": new_analysis.safety_score,
     "risk_level": new_analysis.risk_level,
+    "police_count": emergency["police_count"],
+    "hospital_count": emergency["hospital_count"],
     "recommendation": recommendation,
     "message": "Analysis created successfully"
 }
