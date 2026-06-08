@@ -25,3 +25,17 @@ class Analysis(Base):
     event_time = Column(DateTime)
 
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class CommunityReport(Base):
+    __tablename__ = "community_reports"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    location = Column(String, nullable=False)
+
+    report_type = Column(String, nullable=False)
+
+    description = Column(String)
+
+    created_at = Column(DateTime, default=datetime.utcnow)

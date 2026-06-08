@@ -17,3 +17,8 @@ class AnalysisResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class CommunityReportCreate(BaseModel):
+    location: str
+    report_type: str
+    description: str | None = None
