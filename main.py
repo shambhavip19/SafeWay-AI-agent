@@ -8,7 +8,8 @@ from services.safety_engine import calculate_safety_score
 from services.ai_recommendation import generate_recommendation
 from fastapi.middleware.cors import CORSMiddleware
 from services.emergency_services import get_nearby_emergency_services
-
+from models import CommunityReport
+from schemas import CommunityReportCreate
 
 app = FastAPI()
 app.add_middleware(
@@ -68,3 +69,23 @@ def create_analysis(
     "recommendation": recommendation,
     "message": "Analysis created successfully"
 }
+
+@app.post("/report")
+def create_report(
+    report: CommunityReportCreate,
+    db: Session = Depends(get_db)
+):
+    new_report = CommunityReport(
+        location=report.location,
+        report_type=report.report_type,
+        description=report.description
+    )
+
+    db.add(new_report)
+    db.commit()
+    db.refresh(new_report)
+
+    return {
+        "id": new_report.id,
+        "message": "Report submitted successfully"
+    }
