@@ -1,22 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import dynamic from "next/dynamic";
-import { 
-  Shield, 
-  MapPin, 
-  AlertTriangle, 
-  Navigation, 
-  PlusCircle, 
-  BarChart3, 
-  Clock, 
-  Loader2, 
-  Compass, 
-  PhoneCall, 
-  HeartPulse, 
-  Info,
-  CheckCircle2
-} from "lucide-react";
+import { Shield, Compass, PlusCircle, BarChart3, Loader2 } from "lucide-react";
+import SafetyForm from "../components/SafetyForm";
+import ReportForm from "../components/ReportForm";
+import AnalyticsPanel from "../components/AnalyticsPanel";
 
 // Dynamically import Leaflet Map (requires window object, cannot be server-side rendered)
 const Map = dynamic(() => import("../components/Map"), {
@@ -249,18 +238,6 @@ export default function Home() {
     }
   };
 
-  const getScoreColorClass = (score: number) => {
-    if (score >= 7.5) return "score-success";
-    if (score >= 4.5) return "score-warning";
-    return "score-danger";
-  };
-
-  const getBadgeClass = (risk: string) => {
-    if (risk.toLowerCase() === "low") return "badge-low";
-    if (risk.toLowerCase() === "medium") return "badge-medium";
-    return "badge-high";
-  };
-
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
       {/* HEADER */}
@@ -307,402 +284,45 @@ export default function Home() {
           {/* TAB 1: TRAVEL SAFETY PLANNER */}
           {activeTab === "planner" && (
             <>
-              <div className="card">
-                <h2 className="section-title">
-                  <Navigation size={20} />
-                  Travel Safety Planner
-                </h2>
-                
-                <form onSubmit={(e) => handleSafetyAnalysis(e, true)}>
-                  <div className="form-group">
-                    <label htmlFor="origin">Origin (Start Point)</label>
-                    <input 
-                      id="origin"
-                      type="text" 
-                      className="form-input" 
-                      placeholder="e.g. Baner, Pune" 
-                      value={origin}
-                      onChange={(e) => setOrigin(e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="form-group">
-                    <label htmlFor="destination">Destination (End Point) *</label>
-                    <input 
-                      id="destination"
-                      type="text" 
-                      className="form-input" 
-                      placeholder="e.g. Shivajinagar, Pune" 
-                      required
-                      value={destination}
-                      onChange={(e) => setDestination(e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="form-group">
-                    <label htmlFor="travelTime">Departure Date & Time</label>
-                    <input 
-                      id="travelTime"
-                      type="datetime-local" 
-                      className="form-input" 
-                      value={travelTime}
-                      onChange={(e) => setTravelTime(e.target.value)}
-                    />
-                  </div>
-                  
-                  {analysisError && (
-                    <div style={{ color: "var(--danger-text)", backgroundColor: "var(--danger-light)", padding: "10px", borderRadius: "6px", fontSize: "0.85rem", marginBottom: "15px" }}>
-                      ⚠️ {analysisError}
-                    </div>
-                  )}
-
-                  <div style={{ display: "flex", gap: "10px" }}>
-                    <button 
-                      type="submit" 
-                      className="btn btn-primary"
-                      disabled={isAnalyzing}
-                      style={{ flexGrow: 1 }}
-                    >
-                      {isAnalyzing ? (
-                        <>
-                          <Loader2 className="animate-spin" size={16} />
-                          Analyzing Route...
-                        </>
-                      ) : (
-                        "Analyze Route"
-                      )}
-                    </button>
-                    
-                    <button 
-                      type="button" 
-                      className="btn btn-secondary"
-                      disabled={isAnalyzing}
-                      onClick={(e) => handleSafetyAnalysis(e, false)}
-                      title="Quick Safety Check at Destination"
-                    >
-                      Check Area Only
-                    </button>
-                  </div>
-                </form>
-              </div>
-
-              {/* SAFETY RESULTS BRIEFING */}
-              {safetyResult && (
-                <div className="card" style={{ borderColor: safetyResult.score >= 7.5 ? "var(--success)" : safetyResult.score >= 4.5 ? "var(--warning)" : "var(--danger)" }}>
-                  <div className="result-header">
-                    <div>
-                      <h3 style={{ fontSize: "1.1rem", fontWeight: "700" }}>Safety Assessment</h3>
-                      <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
-                        Generated at {new Date(travelTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                      </span>
-                    </div>
-                    
-                    <div style={{ textAlign: "right" }}>
-                      <div className="score-display">
-                        <span className="score-number" style={{ color: safetyResult.score >= 7.5 ? "var(--success)" : safetyResult.score >= 4.5 ? "var(--warning)" : "var(--danger)" }}>
-                          {safetyResult.score}
-                        </span>
-                        <span className="score-max">/10</span>
-                      </div>
-                      <span className={`badge ${getBadgeClass(safetyResult.risk_level)}`}>
-                        {safetyResult.risk_level} Risk
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* THREAT DETECTION ZONE */}
-                  {safetyResult.threats && safetyResult.threats.length > 0 && (
-                    <div style={{ marginBottom: "1.25rem" }}>
-                      <h4 style={{ fontSize: "0.85rem", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "0.5rem" }}>
-                        Detected Threat Signatures:
-                      </h4>
-                      <div className="threat-list">
-                        {safetyResult.threats.map((threat: string, idx: number) => (
-                          <div className="threat-item" key={idx}>
-                            <AlertTriangle size={14} />
-                            <span>{threat}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* RECOMMENDATIONS */}
-                  {safetyResult.recommendation && (
-                    <div style={{ marginBottom: "1.25rem", borderTop: "1px solid var(--border-color)", paddingTop: "1rem" }}>
-                      <h4 style={{ fontSize: "0.85rem", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "0.25rem", display: "flex", alignItems: "center", gap: "4px" }}>
-                        <Info size={14} />
-                        AI Travel Advice
-                      </h4>
-                      <div className="recommendation-content">
-                        {/* Check if HTML or Markdown and render simply */}
-                        <div dangerouslySetInnerHTML={{ __html: safetyResult.recommendation
-                          .replace(/\n\n/g, "<p></p>")
-                          .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-                          .replace(/### (.*?)\n/g, "<h4>$1</h4>")
-                          .replace(/\* (.*?)\n/g, "<li>$1</li>")
-                        }} />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* CLOSEST EMERGENCY RESOURCES */}
-                  {emergencyResources && emergencyResources.length > 0 && (
-                    <div style={{ borderTop: "1px solid var(--border-color)", paddingTop: "1rem" }}>
-                      <h4 style={{ fontSize: "0.85rem", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "0.75rem", display: "flex", alignItems: "center", gap: "6px" }}>
-                        <PhoneCall size={14} />
-                        Nearest Emergency Resources
-                      </h4>
-                      <div className="resource-list">
-                        {emergencyResources.slice(0, 3).map((res: any, idx: number) => {
-                          const isPolice = res.resource_type === "Police Station";
-                          return (
-                            <div className="resource-item" key={idx}>
-                              <div>
-                                <div className="resource-name" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                  {isPolice ? <Shield size={14} color="#3b82f6" /> : <HeartPulse size={14} color="#ef4444" />}
-                                  {res.name}
-                                </div>
-                                <div className="resource-meta">
-                                  {res.resource_type} • {res.address || "Nearby"}
-                                </div>
-                              </div>
-                              <div className="resource-distance">
-                                {res.distance_meters}m
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+              <SafetyForm
+                origin={origin}
+                destination={destination}
+                travelTime={travelTime}
+                isAnalyzing={isAnalyzing}
+                analysisError={analysisError}
+                safetyResult={safetyResult}
+                emergencyResources={emergencyResources}
+                onOriginChange={setOrigin}
+                onDestinationChange={setDestination}
+                onTravelTimeChange={setTravelTime}
+                onAnalyze={handleSafetyAnalysis}
+              />
             </>
           )}
 
           {/* TAB 2: SUBMIT A REPORT */}
           {activeTab === "report" && (
-            <div className="card">
-              <h2 className="section-title">
-                <PlusCircle size={20} />
-                Report Incident
-              </h2>
-              
-              <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "1.25rem" }}>
-                Submit a safety concern to help keep community route data accurate. Double-click the map on the right to auto-fill latitude and longitude coordinates.
-              </p>
-
-              <form onSubmit={handleReportSubmit}>
-                <div className="form-group">
-                  <label htmlFor="reportLocation">Location Name / Landmark *</label>
-                  <input 
-                    id="reportLocation"
-                    type="text" 
-                    className="form-input" 
-                    placeholder="e.g. Near Jupiter Hospital, Baner" 
-                    required
-                    value={reportLocation}
-                    onChange={(e) => setReportLocation(e.target.value)}
-                  />
-                </div>
-
-                <div className="grid-cols-2">
-                  <div className="form-group">
-                    <label htmlFor="reportLat">Latitude *</label>
-                    <input 
-                      id="reportLat"
-                      type="number" 
-                      step="any"
-                      className="form-input" 
-                      placeholder="e.g. 18.5590"
-                      required
-                      value={reportLat}
-                      onChange={(e) => setReportLat(e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="form-group">
-                    <label htmlFor="reportLon">Longitude *</label>
-                    <input 
-                      id="reportLon"
-                      type="number" 
-                      step="any"
-                      className="form-input" 
-                      placeholder="e.g. 73.7925"
-                      required
-                      value={reportLon}
-                      onChange={(e) => setReportLon(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="reportType">Concern Category *</label>
-                  <select 
-                    id="reportType"
-                    className="form-input"
-                    value={reportType}
-                    onChange={(e) => setReportType(e.target.value)}
-                    style={{ appearance: "auto" }}
-                  >
-                    <option value="Harassment">Harassment</option>
-                    <option value="Suspicious Activity">Suspicious Activity</option>
-                    <option value="Poor Lighting">Poor Lighting</option>
-                    <option value="Unsafe Area">Unsafe Area</option>
-                    <option value="Road Blockage">Road Blockage</option>
-                    <option value="Theft">Theft</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="reportDesc">Description / Details</label>
-                  <textarea 
-                    id="reportDesc"
-                    className="form-input" 
-                    placeholder="Provide details about lighting conditions, time, or what specifically made the area feel unsafe." 
-                    rows={4}
-                    value={reportDesc}
-                    onChange={(e) => setReportDesc(e.target.value)}
-                    style={{ resize: "vertical", fontFamily: "inherit" }}
-                  />
-                </div>
-
-                {reportError && (
-                  <div style={{ color: "var(--danger-text)", backgroundColor: "var(--danger-light)", padding: "10px", borderRadius: "6px", fontSize: "0.85rem", marginBottom: "15px" }}>
-                    ⚠️ {reportError}
-                  </div>
-                )}
-
-                {reportSuccess && (
-                  <div style={{ color: "var(--success-text)", backgroundColor: "var(--success-light)", padding: "10px", borderRadius: "6px", fontSize: "0.85rem", marginBottom: "15px", display: "flex", alignItems: "center", gap: "6px" }}>
-                    <CheckCircle2 size={16} />
-                    Safety report submitted successfully!
-                  </div>
-                )}
-
-                <button 
-                  type="submit" 
-                  className="btn btn-primary"
-                  disabled={isSubmittingReport}
-                >
-                  {isSubmittingReport ? (
-                    <>
-                      <Loader2 className="animate-spin" size={16} />
-                      Submitting Report...
-                    </>
-                  ) : (
-                    "Submit Report"
-                  )}
-                </button>
-              </form>
-            </div>
+            <ReportForm
+              reportLocation={reportLocation}
+              reportLat={reportLat}
+              reportLon={reportLon}
+              reportType={reportType}
+              reportDesc={reportDesc}
+              isSubmittingReport={isSubmittingReport}
+              reportSuccess={reportSuccess}
+              reportError={reportError}
+              onReportLocationChange={setReportLocation}
+              onReportLatChange={setReportLat}
+              onReportLonChange={setReportLon}
+              onReportTypeChange={setReportType}
+              onReportDescChange={setReportDesc}
+              onSubmit={handleReportSubmit}
+            />
           )}
 
           {/* TAB 3: ADMIN SAFETY ANALYTICS */}
           {activeTab === "analytics" && (
-            <div className="card">
-              <h2 className="section-title">
-                <BarChart3 size={20} />
-                Safety Analytics
-              </h2>
-
-              {isLoadingAnalytics ? (
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 0" }}>
-                  <Loader2 className="animate-spin" size={32} color="var(--primary-color)" />
-                  <span style={{ marginTop: "10px", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                    Loading analytics matrices...
-                  </span>
-                </div>
-              ) : analyticsData ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-                  
-                  {/* Totals Grid */}
-                  <div className="grid-cols-2">
-                    <div className="stat-box">
-                      <div className="stat-value">{analyticsData.total_reports}</div>
-                      <div className="stat-label">Reports Logged</div>
-                    </div>
-                    <div className="stat-box">
-                      <div className="stat-value">
-                        {analyticsData.daily_analyses.reduce((acc: number, cur: any) => acc + cur.count, 0)}
-                      </div>
-                      <div className="stat-label">Total Checks</div>
-                    </div>
-                  </div>
-
-                  {/* Hotspots Section */}
-                  <div>
-                    <h4 style={{ fontSize: "0.85rem", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "0.5rem" }}>
-                      Top 5 Hotspot Areas:
-                    </h4>
-                    <div className="analytics-list">
-                      {analyticsData.hotspot_locations.length > 0 ? (
-                        analyticsData.hotspot_locations.map((item: any, idx: number) => (
-                          <div className="analytics-item" key={idx}>
-                            <span>{idx + 1}. {item.location}</span>
-                            <span className="analytics-count">{item.count} reports</span>
-                          </div>
-                        ))
-                      ) : (
-                        <div style={{ fontSize: "0.825rem", color: "var(--text-secondary)", fontStyle: "italic" }}>
-                          No community reports logged yet.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Category Breakdown */}
-                  <div>
-                    <h4 style={{ fontSize: "0.85rem", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "0.75rem" }}>
-                      Incident Categories Distribution:
-                    </h4>
-                    <div className="chart-bar-container">
-                      {analyticsData.report_categories.length > 0 ? (
-                        analyticsData.report_categories.map((item: any, idx: number) => {
-                          const maxCount = Math.max(...analyticsData.report_categories.map((c: any) => c.count)) || 1;
-                          const percent = (item.count / maxCount) * 100;
-                          return (
-                            <div className="chart-row" key={idx}>
-                              <span className="chart-label">{item.category}</span>
-                              <div className="chart-bar-bg">
-                                <div className="chart-bar-fill" style={{ width: `${percent}%` }} />
-                              </div>
-                              <span style={{ fontWeight: 600, width: "20px" }}>{item.count}</span>
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <div style={{ fontSize: "0.825rem", color: "var(--text-secondary)", fontStyle: "italic" }}>
-                          No category statistics available.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Common Threats */}
-                  <div>
-                    <h4 style={{ fontSize: "0.85rem", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "0.5rem" }}>
-                      Frequency of Threat Warnings:
-                    </h4>
-                    <div className="analytics-list">
-                      {analyticsData.common_threats.map((item: any, idx: number) => (
-                        <div className="analytics-item" key={idx}>
-                          <span>{item.threat}</span>
-                          <span style={{ fontWeight: 600 }}>{item.count} triggers</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                </div>
-              ) : (
-                <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", textAlign: "center", padding: "20px 0" }}>
-                  Could not fetch analytics data. Check server connectivity.
-                </div>
-              )}
-            </div>
+            <AnalyticsPanel isLoadingAnalytics={isLoadingAnalytics} analyticsData={analyticsData} />
           )}
 
         </div>
