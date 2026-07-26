@@ -7,9 +7,9 @@ import json
 import math
 from typing import List, Dict, Any, Optional
 
-from database import get_db
+from backend.database import get_db
 from models import Analysis, CommunityReport, EmergencyResource, RouteAnalysis
-from schemas import (
+from backend.schemas import (
     AnalysisCreate, AnalysisResponse,
     CommunityReportCreate, CommunityReportResponse,
     EmergencyResourceCreate, EmergencyResourceResponse,
