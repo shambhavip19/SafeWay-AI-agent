@@ -23,6 +23,7 @@ def generate_recommendation(
     """
     threats = threats or []
     emergency_resources = emergency_resources or []
+    emergency_resources = [r for r in emergency_resources if isinstance(r, dict)]
     
     # 1. Check for live LLM API Keys in environment variables
     openai_key = os.getenv("OPENAI_API_KEY")
@@ -164,3 +165,4 @@ def generate_recommendation(
 {explanation}{resource_msg}{route_advice}"""
 
     return recommendation
+

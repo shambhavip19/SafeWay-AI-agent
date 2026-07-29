@@ -192,11 +192,18 @@ def create_route_analysis(
         pass
 
     # Call recommendation engine for the route
+    dest_coords = route_safety["destination_coords"]
+    emergency_data = get_nearby_emergency_services(
+        dest_coords["latitude"],
+        dest_coords["longitude"],
+        radius_meters=3000
+    )
+
     recommendation = generate_recommendation(
         score=primary_route["overall_score"],
         risk_level=primary_route["risk_level"],
         threats=primary_route["threats"],
-        emergency_resources=primary_route["segments"][0]["threats"] if primary_route["segments"] else [],
+        emergency_resources=emergency_data["resources"],
         origin=route_in.origin,
         destination=route_in.destination,
         alternative_recommendation=route_safety.get("alternative_recommendation")
